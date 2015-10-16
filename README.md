@@ -1,4 +1,4 @@
-# ComputerVisionPractice
+# Computer Vision Practice
 A Python practice for computer vision
 
 ## Peoject 1: Harris Detector
