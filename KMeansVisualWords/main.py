@@ -3,6 +3,7 @@ import shutil
 import cv2
 import numpy as np
 
+# get tilted subimage
 def subimage(image, center, theta, radius):
     theta *= np.pi / 180 # convert to rad
 
@@ -17,8 +18,8 @@ def subimage(image, center, theta, radius):
     return cv2.warpAffine(image, mapping, (int(radius), int(radius)),
                           flags=cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_REPLICATE)
 
+# main
 img = cv2.imread("origin.png")
-
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 # do sift
