@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 import numpy as np
 
+
 # function to generate local gaussian function
 def makeGaussian(size, fwhm=3, center=None):
 
@@ -37,7 +38,7 @@ def drawCorners(im, corners=None, color="black", title=""):
 
     im_show.show()
 
-    im_show.save(title + ".bmp")
+    im_show.save(title + ".png")
 
 
 # function to do non-maximum suppression on image
@@ -78,7 +79,7 @@ def nonmaxSuppress(response_matrix, threshold, suppress_radius):
 
 im = Image.open('complex_original.png')
 
-drawCorners(im, title="Original image")
+drawCorners(im, title="Original Image")
 
 pixels = list(im.getdata())
 width, height = im.size
@@ -97,10 +98,10 @@ dxy = [[dx[i][j + 1] - dx[i][j] for j in range(width - 1)] for i in range(height
 hessian = [[abs(dxx[i][j] * dyy[i][j] - dxy[i][j] ** 2) for j in range(width - 2)] for i in range(height - 2)]
 
 hessian_corners = nonmaxSuppress(hessian, threshold=10000, suppress_radius=6)
-drawCorners(im, hessian_corners, "red", "Hessian detector")
+drawCorners(im, hessian_corners, "red", "Hessian Detector")
 
 # Harris detector
-window_radius = 4
+window_radius = int(min(width, height) / 60)
 k = 0.05
 
 gaussian = makeGaussian(2 * window_radius + 1)
@@ -143,5 +144,5 @@ for i in range(height - 2):
     harris.append(line)
 
 harris_corners = nonmaxSuppress(harris, threshold=400, suppress_radius=window_radius * 2)
-drawCorners(im, harris_corners, "blue", "Harris detector")
+drawCorners(im, harris_corners, "blue", "Harris Detector")
 
