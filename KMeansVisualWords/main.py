@@ -1,7 +1,9 @@
-import os
+from os import listdir
+from os.path import isfile, join
 import shutil
 import cv2
 import numpy as np
+from numpy.linalg import norm
 
 # get tilted subimage
 def subimage(image, center, theta, radius):
@@ -18,43 +20,52 @@ def subimage(image, center, theta, radius):
     return cv2.warpAffine(image, mapping, (int(radius), int(radius)),
                           flags=cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_REPLICATE)
 
+
 # main
-img = cv2.imread("origin.png")
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+origin_dir = "./learn"
+learn_images = [cv2.imread(join(origin_dir, f)) for f in listdir(origin_dir)]
+learn_gray = [cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) for img in learn_images]
 
 # do sift
 sift = cv2.xfeatures2d.SIFT_create()
-kp, des = sift.detectAndCompute(gray, None)
+learn_sift = []
+for gray in learn_gray:
+    kp, dst_sift = sift.detectAndCompute(gray, None)
+    learn_sift.extend(dst_sift)
+
+learn_sift = np.array(learn_sift)
 
 # do k-means
-k = 40
-compactness, labels, centers = cv2.kmeans(des, k, None, (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS,
-                                                         10000, 0.001), 20, cv2.KMEANS_RANDOM_CENTERS)
+print("K-Means Undergo...")
+k = 1000
+compactness, labels, centers = cv2.kmeans(learn_sift, k, None, (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS,
+                                                                30, 1), 5, cv2.KMEANS_RANDOM_CENTERS)
+
+print("done")
 # extract and classify visual words
-words = [[] for i in range(k)]
-length = 80
-images_per_line = 15
+dict = np.zeros(k)
 
-for index, point in enumerate(kp):
-    if point.size > 2:
-        word = subimage(gray, point.pt, point.angle, point.size * 2)
-        uniform_word = cv2.resize(word, (length, length))
-        words[labels[index]].append(uniform_word)
+for i in range(len(learn_sift)):
+    dict[labels[i]] += 1
 
-# clean directories
-if os.path.exists("words"):
-    shutil.rmtree("words")
-os.makedirs("words")
+dst_img = cv2.imread("dst.png")
+dst_gray = cv2.cvtColor(dst_img, cv2.COLOR_BGR2GRAY)
 
-# put similar words into one image
-for index, word in enumerate(words):
-    if len(word) == 0:
-        continue
-    for i in range(images_per_line - 1 - (len(word) - 1) % images_per_line):
-        word.append(255 * np.ones((length, length), dtype=np.uint8))
-    image = np.vstack([np.hstack(word[i:i+images_per_line]) for i in range(0, len(word), images_per_line)])
-    cv2.imwrite("words/word" + str(index) + ".png", image)
+kp, dst_sift = sift.detectAndCompute(dst_gray, None)
 
-# draw keypoints
-img = cv2.drawKeypoints(gray, kp, gray)
-cv2.imwrite('sift_keypoints.png', img)
+dst_words = np.zeros(k)
+
+for point in dst_sift:
+    point = np.array(point)
+    nearest_center = np.array(centers[0])
+    nearest_center_index = 0
+    for i in range(k):
+        center = np.array(centers[i])
+        if norm(point - center) < norm(point - nearest_center):
+            nearest_center_index = i
+            nearest_center = center
+    dst_words[nearest_center_index] += 1
+
+similarity = np.dot(dst_words, dict) / dst_sift.size
+
+print("Similarity:", similarity)
