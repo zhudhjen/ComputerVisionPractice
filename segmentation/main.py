@@ -3,27 +3,33 @@ from skimage.future import graph
 from matplotlib import pyplot as plt
 from mean_shift import mean_shift
 
-image = io.imread("94079.jpg")
-bandwidths = range(10, 30, 10)
-ms_output = []
-for b in bandwidths:
-    new_image = mean_shift(image, b)
-    ms_output.append(new_image)
-    io.imsave("94079_ms_b" + b + ".jpg", new_image)
+image_names = ["sample/campus", "108005/108005", "25098/25098", "78004/78004", "94079/94079"]
 
-print("Computing N-Cut ...")
-label_slic = segmentation.slic(image, compactness=20, n_segments=600)
-mean = graph.rag_mean_color(image, label_slic, mode='similarity')
-label_ncut = graph.cut_normalized(label_slic, mean)
-ncut_output = color.label2rgb(label_ncut, image, kind='avg')
+for image_name in image_names:
+    print("Processing image:", image_name)
+    image = io.imread(image_name + ".jpg")
+    bandwidths = range(20, 101, 20)
+    ms_output = {}
+    for b in bandwidths:
+        new_image = mean_shift(image, b)
+        ms_output[b] = new_image
+        io.imsave(image_name + "_ms_local_b" + str(b) + ".jpg", new_image)
 
-plt.figure().suptitle('Original')
-io.imshow(image)
+    print("Computing N-Cut ...")
+    label_slic = segmentation.slic(image, compactness=20, n_segments=600)
+    mean = graph.rag_mean_color(image, label_slic, mode='similarity')
+    label_ncut = graph.cut_normalized(label_slic, mean)
+    ncut_output = color.label2rgb(label_ncut, image, kind='avg')
+    io.imsave(image_name + "_ncut.jpg", ncut_output)
+    print()
 
-for b in bandwidths:
-    plt.figure().suptitle('Result of Mean Shift - Bandwidth = ' + b)
-    io.imshow(ms_output[b])
-
-plt.figure().suptitle('Result of N-Cut')
-io.imshow(ncut_output)
-io.show()
+    # plt.figure().suptitle('Original')
+    # io.imshow(image)
+    #
+    # for b in bandwidths:
+    #     plt.figure().suptitle('Result of Mean Shift - Bandwidth = ' + str(b))
+    #     io.imshow(ms_output[b])
+    #
+    # plt.figure().suptitle('Result of N-Cut')
+    # io.imshow(ncut_output)
+    # io.show()
